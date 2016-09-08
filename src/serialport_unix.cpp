@@ -32,30 +32,10 @@ Boolean lockInitialised = FALSE;
 #include <linux/serial.h>
 #endif
 
-struct UnixPlatformOptions : OpenBatonPlatformOptions {
-  uint8_t vmin;
-  uint8_t vtime;
-};
-
-OpenBatonPlatformOptions* ParsePlatformOptions(const v8::Local<v8::Object>& options) {
-  Nan::HandleScope scope;
-
-  UnixPlatformOptions* result = new UnixPlatformOptions();
-  result->vmin = Nan::Get(options, Nan::New<v8::String>("vmin").ToLocalChecked()).ToLocalChecked()->ToInt32()->Int32Value();
-  result->vtime = Nan::Get(options, Nan::New<v8::String>("vtime").ToLocalChecked()).ToLocalChecked()->ToInt32()->Int32Value();
-
-  return result;
-}
 
 int ToBaudConstant(int baudRate);
 int ToDataBitsConstant(int dataBits);
 int ToStopBitsConstant(SerialPortStopBits stopBits);
-
-void AfterOpenSuccess(int fd, Nan::Callback* dataCallback, Nan::Callback* disconnectedCallback, Nan::Callback* errorCallback) {
-  delete dataCallback;
-  delete errorCallback;
-  delete disconnectedCallback;
-}
 
 int ToBaudConstant(int baudRate) {
   switch (baudRate) {
@@ -149,7 +129,10 @@ int setBaudRate(ConnectionOptionsBaton *data) {
 
   // get port options
   struct termios options;
-  tcgetattr(fd, &options);
+  if (-1 == tcgetattr(fd, &options)) {
+    snprintf(data->errorString, sizeof(data->errorString), "Error: %s setting custom baud rate of %d", strerror(errno), data->baudRate);
+    return -1;
+  }
 
   // If there is a custom baud rate on linux you can do the following trick with B38400
   #if defined(__linux__) && defined(ASYNC_SPD_CUST)
@@ -207,8 +190,6 @@ void EIO_Update(uv_work_t* req) {
 }
 
 int setup(int fd, OpenBaton *data) {
-  UnixPlatformOptions* platformOptions = static_cast<UnixPlatformOptions*>(data->platformOptions);
-
   int dataBits = ToDataBitsConstant(data->dataBits);
   if (-1 == dataBits) {
     snprintf(data->errorString, sizeof(data->errorString), "Invalid data bits setting %d", data->dataBits);
@@ -322,8 +303,8 @@ int setup(int fd, OpenBaton *data) {
   // It works with ICRNL.
   options.c_lflag = 0;  // ICANON;
 
-  options.c_cc[VMIN]= platformOptions->vmin;
-  options.c_cc[VTIME]= platformOptions->vtime;
+  // options.c_cc[VMIN]= platformOptions->vmin;
+  // options.c_cc[VTIME]= platformOptions->vtime;
 
   // why?
   tcflush(fd, TCIFLUSH);

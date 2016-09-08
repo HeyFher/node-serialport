@@ -51,6 +51,9 @@ For getting started with node-serialport, we recommend you begin with the follow
 {{#class name="SerialPort"}}
 {{>member-index-grouped baseLevel=0 ~}}
 {{/class}}
+{{#class name="Binding"}}
+{{>member-index-grouped baseLevel=0 ~}}
+{{/class}}
 * [Command Line Tools](#command-line-tools)
   * [Serial Port List](#serial-port-list)
   * [Serial Port Terminal](#serial-port-terminal)
@@ -268,9 +271,9 @@ port.write(new Buffer('Hi Mom!'));
 
 Enjoy and do cool things with this code.
 
-{{#modules~}}
+{{#class name="SerialPort"}}
 {{>members~}}
-{{/modules}}
+{{/class}}
 
 ## Command Line Tools
 If you install `serialport` globally. (eg, `npm install -g serialport`) you'll receive two command line tools.
